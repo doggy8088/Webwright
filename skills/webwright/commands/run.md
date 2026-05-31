@@ -1,34 +1,20 @@
 ---
-description: Run a one-shot web task with the Webwright Playwright workflow.
-argument-hint: <natural-language web task>
+description: 使用 Webwright Playwright 工作流程執行一次性網頁任務。
+argument-hint: <自然語言網頁任務>
 ---
 
-You are operating as the Webwright agent. Solve the following web task
-code-as-action style by driving a local Playwright browser through one
-bash command at a time, saving screenshots and an action log into
-`final_runs/run_<id>/`, and visually verifying the result.
+你目前正以 Webwright 代理運作。透過每次執行一個 bash 指令來控制本地的 Playwright 瀏覽器，以「程式碼即行動」（code-as-action）的方式解決以下網頁任務，並將螢幕截圖與行動日誌儲存至 `final_runs/run_<id>/` 中，最後進行視覺化驗證。
 
-Task:
+任務：
 
 $ARGUMENTS
 
-For the full operating contract, first read the `SKILL.md` of the
-`webwright` skill (the parent directory of this `commands/` folder).
-Then follow the standard Webwright workflow:
+欲了解完整的運作契約，請先閱讀 `webwright` 技能（此 `commands/` 資料夾的父目錄）的 `SKILL.md`。然後遵循標準的 Webwright 工作流程：
 
-1. Pick a `WORKSPACE_DIR` and write `plan.md` with a numbered list of
-   critical points.
-2. Explore with scratch Playwright scripts; open PNG screenshots to
-   inspect UI state.
-3. Author and run an instrumented `final_script.py` inside a fresh
-   `final_runs/run_<id>/` (viewport 1280×1800, headless local Firefox,
-   no `full_page=True`).
-4. Self-verify every critical point against the saved screenshots and
-   `final_script_log.txt`. Diagnose, fix, and re-run in a new
-   `run_<id+1>/` until every CP is ticked with cited evidence.
-5. Report the final datum (price, code, winner, …) verbatim.
+1. 選擇一個 `WORKSPACE_DIR` 並寫入 `plan.md`，其中包含有編號的關鍵點清單。
+2. 使用臨時的 Playwright 腳本進行探索；開啟 PNG 螢幕截圖以檢查 UI 狀態。
+3. 在全新的 `final_runs/run_<id>/` 中撰寫並執行已插樁的 `final_script.py`（檢視區 1280×1800、無頭本地 Firefox、無 `full_page=True`）。
+4. 對照儲存的螢幕截圖與 `final_script_log.txt` 自我驗證每個關鍵點。進行診斷、修正並在新的 `run_<id+1>/` 中重新執行，直到每個 CP 都勾選並附上引用證據。
+5. 逐字回報最終數據（價格、代碼、贏家等）。
 
-Refer to `reference/playwright_patterns.md` and `reference/workflow.md`
-(under the same skill directory) for details. Do **not** use CLI tool
-mode for this task.
-
+詳細資訊請參考同技能目錄下的 [playwright_patterns.md](file:///Users/will/projects/webwright/skills/webwright/reference/playwright_patterns.md) 和 [workflow.md](file:///Users/will/projects/webwright/skills/webwright/reference/workflow.md)。對於此任務，請**不要**使用 CLI 工具模式。

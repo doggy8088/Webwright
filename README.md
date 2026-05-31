@@ -4,7 +4,7 @@
   <img src="assets/webwright_logo.svg" alt="Webwright logo" width="320">
 </p>
 
-<p align="center"><b>Turn Your Coding Models to Be State-of-the-art Browser Agents</b></p>
+<p align="center"><b>讓你的程式設計模型成為最先進的瀏覽器代理</b></p>
 
 <p align="center">
   <img src="https://img.shields.io/badge/python-%E2%89%A53.10-blue?logo=python&logoColor=white" alt="Python">
@@ -13,85 +13,85 @@
   <img src="https://img.shields.io/badge/footprint-%E2%89%A4~1.5k%20LoC-brightgreen" alt="Footprint">
 </p>
 
-- 📝 **Blog:** [Webwright: A Terminal Is All You Need For Web Agents](https://www.microsoft.com/en-us/research/articles/webwright-a-terminal-is-all-you-need-for-web-agents/)
-- 🌐 **Project Page:** [microsoft.github.io/Webwright](https://microsoft.github.io/Webwright/)
+- 📝 **部落格：** [Webwright: A Terminal Is All You Need For Web Agents](https://www.microsoft.com/en-us/research/articles/webwright-a-terminal-is-all-you-need-for-web-agents/)
+- 🌐 **專案頁面：** [microsoft.github.io/Webwright](https://microsoft.github.io/Webwright/)
 
-Webwright gives LLM a terminal where it can launch multiple browser sessions to inspect the page and complete a web task. It captures and inspects page screenshots/states only when needed. It enforces each web task to be completed end-to-end within a re-runnable Python script, i.e. your web agent browsing history is a single code file. No multi-agent system, no graph engine, no plugin layer, no hidden orchestration — just a terminal, a browser, and a model.
+Webwright 會為 LLM 提供一個終端機，讓它能啟動多個瀏覽器工作階段來檢查頁面並完成網頁任務。它只在需要時擷取並檢視頁面截圖／狀態。它要求每個網頁任務都必須以可重複執行的 Python 腳本端到端完成，也就是說，你的網頁代理瀏覽歷程就是單一程式碼檔案。沒有多代理系統、沒有圖形引擎、沒有外掛層、沒有隱藏的編排機制——只有終端機、瀏覽器與模型。
 
-Already got your favorite agents, and wonder how to make Claude Code, Codex, Hermes, OpenClaw more capable in browser tasks? Consider adding [Webwright plugin/skills](#-use-as-a-claude-code-skill)!
+已經有你偏好的代理，並且想讓 Claude Code、Codex、Hermes、OpenClaw 在瀏覽器任務上更強大嗎？可以考慮加入 [Webwright 外掛／技能](#-use-as-a-plugin)！
 
 ---
 
-## 📰 News
+## 📰 最新消息
 
-- **2026-05-11** — Support Task2UI mode: Webwright completes the task and renders task results into an HTML-based web app you can easily view and reuse.  
-- **2026-05-06** — Codex and Claude Code plugin manifests added; install via `/plugin install webwright@webwright`. OpenClaw and Hermes Agent integrations shipped; the same `skills/webwright/` folder now loads across Claude Code, Codex, OpenClaw, and Hermes.
-- **2026-05-04** — Initial public release: ~1.5k LoC, OpenAI / Anthropic / OpenRouter backends, Playwright environment.
+- **2026-05-11** — 支援 Task2UI 模式：Webwright 完成任務後，會將任務結果渲染成以 HTML 為基礎的 Web 應用程式，方便你檢視與重複使用。  
+- **2026-05-06** — 已新增 Codex 與 Claude Code 的外掛資訊清單；可透過 `/plugin install webwright@webwright` 安裝。也已推出 OpenClaw 與 Hermes Agent 整合；同一個 `skills/webwright/` 資料夾現在可在 Claude Code、Codex、OpenClaw 與 Hermes 之間共用載入。
+- **2026-05-04** — 首次公開釋出：~1.5k LoC、OpenAI / Anthropic / OpenRouter 後端，以及 Playwright 執行環境。
 
 ---
 
 <details>
-<summary><strong>💡 Motivation: Beyond Step-by-Step Web Interaction in a Stateful Browser</strong></summary>
+<summary><strong>💡 動機：突破在具狀態瀏覽器中逐步互動的限制</strong></summary>
 
-Most web agents today treat the browser session itself as the workspace: at each step the model receives the current page state and predicts a single next operation — a click, a type, a DOM selector, or a short tool call. Whatever the format, the agent is locked into predicting one web action at a time inside a predefined interaction loop. That harness was useful when LLMs were weaker. As models get stronger at writing and debugging code, the same harness becomes a bottleneck.
+目前多數網頁代理都把瀏覽器工作階段本身視為工作區：在每一步中，模型會收到目前頁面狀態，並預測下一個單一步驟操作——例如點擊、輸入、DOM selector，或簡短的工具呼叫。不論格式為何，代理都被限制在預先定義的互動迴圈中，一次只預測一個網頁操作。當 LLM 還比較弱時，這樣的框架很有用；但隨著模型越來越擅長撰寫與除錯程式碼，這種框架反而變成瓶頸。
 
-Webwright takes a different stance: **separate the agent from the browser**, and treat the browser as something the agent can launch, inspect, and discard while developing a program. The persistent artifact is not the browser session — it's the **code and logs in the local workspace**.
+Webwright 採取不同立場：**將代理與瀏覽器分離**，把瀏覽器視為代理在開發程式時可以啟動、檢查並丟棄的環境。持久保存的產物不是瀏覽器工作階段，而是 **本機工作區中的程式碼與日誌**。
 
-- 🧱 **Robust, reusable interaction with web environments** — instead of fragile pixel-level actions, a coding agent with a terminal queries elements, waits for conditions, and handles dynamic behaviors like lazy loading or re-rendering. The resulting scripts can be rerun, adapted, and shared across tasks rather than rediscovered from scratch.
-- ⚡ **Efficient composition of complex workflows** — multi-step interactions like selecting a date or filling a form become a compact program. Loops, functions, and abstractions let the agent generalize across similar tasks (e.g. different dates) without re-predicting the same low-level sequences. Fewer interaction rounds, faster execution, less error accumulation on long horizons.
-- 🧪 **Workspace-as-state, not browser-as-state** — the agent can write exploratory scripts, spawn fresh browser sessions, and decide for itself when to capture screenshots and inspect failures, much like a human engineer iterating on an RPA script.
-- 🪄 **Surprisingly effective despite being minimal** — this stripped-down setup turns out to handle complex and especially long-horizon web tasks well (see [Performance](#-performance)).
+- 🧱 **對網頁環境提供穩健、可重用的互動方式** — 不再依賴脆弱的像素層級操作，具備終端機的程式設計代理可以查詢元素、等待條件成立，並處理 lazy loading 或重新渲染等動態行為。產生出的腳本可以重新執行、調整與分享給其他任務使用，而不是每次都從零重新探索。
+- ⚡ **高效率組合複雜工作流程** — 像選日期或填表單這類多步驟互動，可以濃縮成簡潔的程式。透過迴圈、函式與抽象化，代理能在相似任務間泛化（例如不同日期），不必反覆預測相同的底層操作序列。互動輪次更少、執行更快、長流程中的錯誤累積也更少。
+- 🧪 **以工作區為狀態，而非以瀏覽器為狀態** — 代理可以撰寫探索性腳本、啟動全新的瀏覽器工作階段，並自行決定何時擷取截圖與檢查失敗原因，就像人類工程師反覆調整 RPA 腳本一樣。
+- 🪄 **雖然極簡，效果卻出乎意料地好** — 這種精簡配置其實很能處理複雜、尤其是長時程的網頁任務（見 [效能](#-performance)）。
 
 </details>
 
 ---
 
 <details>
-<summary><strong>🌟 Why Webwright</strong></summary>
+<summary><strong>🌟 為什麼選擇 Webwright</strong></summary>
 
-Most web agent frameworks bury the actual agent loop under layers of abstractions. Webwright takes the opposite stance:
+多數網頁代理框架都把實際的代理迴圈埋在多層抽象之下。Webwright 則採取相反做法：
 
-- 🪶 **Lightweight by design** — core agent loop in a single ~450-line file, Playwright environment in ~570 lines, CLI in ~150 lines.
-- 🧩 **Pluggable model backends** — OpenAI, Anthropic, and OpenRouter, each ~150–200 lines.
-- 🔍 **Zero hidden frameworks** — just `httpx`, `pydantic`, `playwright`, and `typer`.
-- 🔁 **Flat prompt → observe → execute script loop** — readable end-to-end, easy to debug, easy to fork.
-- 🧪 **Run-artifact first** — every run writes trajectories and screenshots to disk for inspection.
+- 🪶 **設計上追求輕量** — 核心代理迴圈只有單一個約 450 行的檔案，Playwright 環境約 570 行，CLI 約 150 行。
+- 🧩 **可插拔的模型後端** — OpenAI、Anthropic 與 OpenRouter 各自約 150–200 行。
+- 🔍 **零隱藏框架** — 只使用 `httpx`、`pydantic`、`playwright` 與 `typer`。
+- 🔁 **扁平化的 prompt → observe → execute script 迴圈** — 端到端可讀、易於除錯，也容易 fork。
+- 🧪 **以執行產物為優先** — 每次執行都會將 trajectory 與截圖寫入磁碟，方便檢查。
 
-If you want a minimal, easy-to-debug starting point for browser-using agents instead of another heavyweight platform, this is it.
+如果你想要的是一個極簡、容易除錯、可作為瀏覽器代理起點的專案，而不是另一個龐大平台，那就是它。
 
 </details>
 
 ---
 
 <details>
-<summary><strong>🆚 How Webwright Differs From Other Browser-Agent Repos</strong></summary>
+<summary><strong>🆚 Webwright 與其他瀏覽器代理儲存庫有何不同</strong></summary>
 
-How they differ at the architectural level:
+以下是架構層級上的差異：
 
 |                     | **Stagehand (Browserbase)**                                  | **agent-browser (Vercel)**                                                | **browser-use**                                       | **Webwright**                                                       |
 | ------------------- | ------------------------------------------------------------ | ------------------------------------------------------------------------- | ----------------------------------------------------- | ------------------------------------------------------------------------- |
-| **Paradigm**        | Hybrid: code + NL primitives (`act` / `extract` / `agent`)   | CLI tool that *another* agent (Claude Code, Codex, etc.) calls            | Autonomous LLM agent loop over DOM/AX snapshots       | **Coding agent with a terminal**; browser is just an environment it spawns |
-| **Action space**    | Playwright code, or NL → LLM-translated Playwright           | Discrete subcommands (`open`, `click @e2`, `snapshot`, `eval`)            | Indexed click/type actions selected by the LLM        | **Free-form Python (writes Playwright scripts itself)**                       |
-| **What is "state"?**| The browser session                                          | The browser session (held by daemon across CLI calls)                     | The browser session                                   | **The local workspace — code, screenshots, logs.** Browser is disposable. |
-| **Loop shape**      | Imperative; `agent()` does multi-step when needed            | One CLI invocation per micro-step                                         | observe → predict next action → execute → repeat      | write code → execute → inspect screenshots → repair (code-as-action)      |
+| **範式**            | 混合式：程式碼 + 自然語言原語（`act` / `extract` / `agent`） | 由其他代理（Claude Code、Codex 等）呼叫的 CLI 工具                        | 以 DOM/AX snapshot 為基礎的自主 LLM 代理迴圈          | **具備終端機的程式設計代理**；瀏覽器只是它啟動的環境 |
+| **動作空間**        | Playwright 程式碼，或由自然語言 → LLM 轉成 Playwright        | 離散式子命令（`open`、`click @e2`、`snapshot`、`eval`）                   | 由 LLM 選擇索引化的 click/type 操作                   | **自由形式的 Python（自行撰寫 Playwright 腳本）** |
+| **什麼是「狀態」？**| 瀏覽器工作階段                                               | 瀏覽器工作階段（由 daemon 跨 CLI 呼叫維持）                               | 瀏覽器工作階段                                        | **本機工作區——程式碼、截圖與日誌。** 瀏覽器可隨時丟棄。 |
+| **迴圈形狀**        | 命令式；`agent()` 會在需要時處理多步驟                       | 每個微步驟對應一次 CLI 呼叫                                               | observe → predict next action → execute → repeat      | write code → execute → inspect screenshots → repair（code-as-action） |
 </details>
 
 
 ---
 
-## 🎥 Demo
+## 🎥 示範
 https://github.com/user-attachments/assets/4ed94cd5-11be-4daa-b2d7-1260a803baca
 
 ---
 
-## 📊 Performance
+## 📊 效能
 
-State-of-the-art on two real-website benchmarks with a 100-step budget — see the [blog post](https://www.microsoft.com/en-us/research/articles/webwright-a-terminal-is-all-you-need-for-web-agents/) for full details.
+在兩個真實網站基準測試中，以 100 步預算達到最先進成果——完整細節請參閱[部落格文章](https://www.microsoft.com/en-us/research/articles/webwright-a-terminal-is-all-you-need-for-web-agents/)。
 
-- 🏆 **Online-Mind2Web (300 tasks):** **86.7%** with GPT-5.4 — highest among open-sourced harnesses in the AutoEval category. Claude Opus 4.7 reaches **84.7%**, and is stronger on the hard split (**80.5%** vs. 76.6% for GPT-5.4 at N=100).
-- 🚀 **Odysseys (200 long-horizon tasks):** **60.1%** with GPT-5.4 (avg. 76.1 steps) — **+15.6 points** over the prior SOTA (Opus 4.6 at 44.5%, using vision based approach and persistent browser) and **+26.6 points** over base GPT-5.4 (33.5% using xy-coordinate prediction and persistent browser).
-- 🧠 **Code-as-action beats coordinate prediction:** Webwright substantially outperforms a reproduced GPT-5.4 screenshot+xy-coordinate baseline across all difficulty splits.
-- 🧰 **Small models + reusable tools:** generated scripts can be packaged as parameterized CLI tools — even **Qwen-3.5-9B** completes tasks well on Online-Mind2Web sites with 5+ tools available.
+- 🏆 **Online-Mind2Web（300 個任務）：** 使用 GPT-5.4 達到 **86.7%** —— 在 AutoEval 類別中名列所有開源框架之首。Claude Opus 4.7 達到 **84.7%**，並且在困難切分上表現更強（N=100 時 **80.5%**，GPT-5.4 為 76.6%）。
+- 🚀 **Odysseys（200 個長時程任務）：** 使用 GPT-5.4 達到 **60.1%**（平均 76.1 步）—— 相比先前 SOTA（採用 vision-based approach 與持久瀏覽器的 Opus 4.6，44.5%）高出 **15.6 個百分點**，相比基礎 GPT-5.4（使用 xy-coordinate prediction 與持久瀏覽器，33.5%）高出 **26.6 個百分點**。
+- 🧠 **以程式碼作為動作勝過座標預測：** Webwright 在所有難度切分中，都明顯優於重現的 GPT-5.4 screenshot+xy-coordinate 基線。
+- 🧰 **小模型 + 可重用工具：** 產生出的腳本可以封裝為參數化 CLI 工具——即使是 **Qwen-3.5-9B**，在有 5 個以上工具可用時，也能在 Online-Mind2Web 網站上良好完成任務。
 
 <p align="center">
   <img src="assets/odysseys_eval_step100.png" alt="Odysseys long-horizon eval @ 100 steps" width="49%">
@@ -100,63 +100,52 @@ State-of-the-art on two real-website benchmarks with a 100-step budget — see t
 
 ---
 
-## 🗺️ Project Map
+## 🗺️ 專案地圖
 
-```
+```text
 webwright/
-├── pyproject.toml           # package: webwright
+├── pyproject.toml           # 套件：webwright
 ├── src/webwright/
-│   ├── run/cli.py           # CLI entrypoint (`webwright`)
-│   ├── agents/default.py    # core agent loop
-│   ├── environments/        # Playwright browser workspace
-│   ├── tools/               # image_qa, self_reflection
-│   ├── models/              # openai_model, anthropic_model, base
-│   ├── config/              # base.yaml, model_openai.yaml, model_claude.yaml
+│   ├── run/cli.py           # CLI 入口點（`webwright`）
+│   ├── agents/default.py    # 核心代理迴圈
+│   ├── environments/        # Playwright 瀏覽器工作區
+│   ├── tools/               # image_qa、self_reflection
+│   ├── models/              # openai_model、anthropic_model、base
+│   ├── config/              # base.yaml、model_openai.yaml、model_claude.yaml
 │   └── utils/
 ├── assets/
-│   └── task_showcase/       # tiny Flask dashboard for repeatable runs
+│   └── task_showcase/       # 用於可重複執行 run 的小型 Flask 儀表板
 │       ├── app.py
-│       ├── templates/       # dashboard.html, task.html
-│       └── tasks/<short_id>/ # task.json + report.json per task
+│       ├── templates/       # dashboard.html、task.html
+│       └── tasks/<short_id>/ # 每個任務各有 task.json + report.json
 ├── tests/
-└── outputs/                 # run artifacts (trajectories, screenshots)
+└── outputs/                 # 執行產物（trajectories、screenshots）
 ```
 
 ---
 
-## 📰 Task Showcase (repeatable runs as a dashboard)
+## 📰 Task Showcase（以儀表板呈現可重複執行的 runs）
 
-A tiny Flask app under [`assets/task_showcase/`](assets/task_showcase/README.md) consolidates
-Webwright runs for **repeatable** odyssey tasks (deals, inventory, listings,
-job boards, weather, etc.) into a single dashboard. Each task ships only two
-files — `task.json` (metadata) and `report.json` (curated, structured output:
-sources + result sections like tables, lists, summaries) — and the templates
-render them generically, so adding a new task is just dropping a new folder
-in `assets/task_showcase/tasks/`.
+位於 [`assets/task_showcase/`](assets/task_showcase/README.md) 下方的小型 Flask 應用程式，會把 **可重複執行** 的 odyssey 任務（優惠、庫存、列表、求職看板、天氣等）整合到同一個儀表板中。每個任務只需要兩個檔案——`task.json`（中繼資料）與 `report.json`（人工整理的結構化輸出：來源 + 結果區塊，例如表格、清單、摘要）——而模板會以通用方式渲染它們，因此要新增任務，只需把新的資料夾放進 `assets/task_showcase/tasks/`。
 
 ```bash
 pip install flask
 python assets/task_showcase/app.py    # http://127.0.0.1:5005
 ```
 
-To have Webwright produce a renderer-ready task folder at runtime, stack the
-Task Showcase overlay:
+若要讓 Webwright 在執行時產生可直接供 renderer 使用的任務資料夾，可疊加 Task Showcase overlay：
 
 ```bash
 python -m webwright.run.cli \
     -c base.yaml -c model_openai.yaml -c task_showcase.yaml \
-    -t "<repeatable web task>" \
+    -t "<可重複執行的網頁任務>" \
     --task-id my_repeatable_task \
     -o outputs/default
 ```
 
-> **Note:** `report.json` is only generated when `-c task_showcase.yaml` is
-> included. A plain `base.yaml` run produces `trajectory.json` and debug
-> artifacts but no `report.json`.
+> **注意：** 只有在包含 `-c task_showcase.yaml` 時才會產生 `report.json`。若只使用 `base.yaml` 執行，會產生 `trajectory.json` 與除錯產物，但不會有 `report.json`。
 
-The run writes `task_showcase/tasks/<short_id>/task.json` and `report.json`
-inside the output workspace. Render those generated files without copying them
-back into the repo:
+執行時會在輸出工作區內寫入 `task_showcase/tasks/<short_id>/task.json` 與 `report.json`。直接渲染這些產生出的檔案即可，不必再把它們複製回儲存庫：
 
 ```bash
 python assets/task_showcase/app.py \
@@ -165,27 +154,24 @@ python assets/task_showcase/app.py \
 
 ---
 
-## 🚀 Quick Start
+## 🚀 快速開始
 
-### Prerequisites
+### 先決條件
 
 - Python 3.10+
-- Chromium installed through Playwright
-- An API key for your chosen backend (OpenAI, Anthropic, or OpenRouter)
+- 透過 Playwright 安裝的 Chromium
+- 你所選後端（OpenAI、Anthropic 或 OpenRouter）的 API 金鑰
 
-### Install
+### 安裝
 
 ```bash
 pip install -e .
 playwright install chromium
 ```
 
-### Run
+### 執行
 
-Export credentials for the configured backend (for example, `OPENAI_API_KEY`
-with `model_openai.yaml` or `ANTHROPIC_API_KEY` with `model_claude.yaml`). The
-`image_qa` and `self_reflection` tools use the same configured model by default,
-so an Anthropic run does not require an OpenAI key. Then:
+匯出所設定後端的憑證（例如搭配 `model_openai.yaml` 時使用 `OPENAI_API_KEY`，或搭配 `model_claude.yaml` 時使用 `ANTHROPIC_API_KEY`）。`image_qa` 與 `self_reflection` 工具預設會使用相同的已配置模型，因此 Anthropic 執行流程不需要額外的 OpenAI 金鑰。接著：
 
 ```bash
 python -m webwright.run.cli \
@@ -196,23 +182,23 @@ python -m webwright.run.cli \
     -o outputs/default
 ```
 
-### 🚩 Flags
+### 🚩 旗標
 
-| Flag | Description |
+| 旗標 | 說明 |
 |------|-------------|
-| `-c` | Config file(s) from `src/webwright/config/` (stackable). |
-| `-t` | Task instruction. |
-| `--start-url` | Initial page. |
-| `--task-id` | Output subfolder name. |
-| `-o` | Output directory. |
+| `-c` | 來自 `src/webwright/config/` 的設定檔（可堆疊）。 |
+| `-t` | 任務指令。 |
+| `--start-url` | 初始頁面。 |
+| `--task-id` | 輸出子資料夾名稱。 |
+| `-o` | 輸出目錄。 |
 
 ---
 
-## 🔌 Use as a Plugin
+## 🔌 作為外掛使用
 
-Webwright ships plugin manifests for both [Claude Code](https://docs.claude.com/en/docs/claude-code/plugins) ([`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)) and [OpenAI Codex](https://developers.openai.com/codex/plugins) ([`.codex-plugin/plugin.json`](.codex-plugin/plugin.json)), with the shared skill at [`skills/webwright/`](skills/webwright/) and slash commands at [`skills/webwright/commands/`](skills/webwright/commands/). The host agent drives the Webwright loop natively — no extra LLM API key or cost beyond your host subscription. Hosts that read PNG screenshots natively skip the `image_qa` / `self_reflection` tools.
+Webwright 針對 [Claude Code](https://docs.claude.com/en/docs/claude-code/plugins)（[`.claude-plugin/plugin.json`](.claude-plugin/plugin.json)）與 [OpenAI Codex](https://developers.openai.com/codex/plugins)（[`.codex-plugin/plugin.json`](.codex-plugin/plugin.json)）都提供了外掛資訊清單，共用技能位於 [`skills/webwright/`](skills/webwright/)，slash commands 位於 [`skills/webwright/commands/`](skills/webwright/commands/)。宿主代理會原生驅動 Webwright 迴圈——除了你的宿主訂閱之外，不需要額外的 LLM API 金鑰或成本。若宿主可原生讀取 PNG 截圖，便會略過 `image_qa` / `self_reflection` 工具。
 
-Common runtime deps (install once after either path):
+通用的執行期相依套件（任一路徑安裝後只需安裝一次）：
 
 ```bash
 pip install -e .
@@ -222,163 +208,163 @@ playwright install chromium
 <details>
 <summary><b>Claude Code</b></summary>
 
-### Install
+### 安裝
 
-Install through the bundled marketplace inside Claude Code:
+透過 Claude Code 內建的 marketplace 安裝：
 
 ```text
-# 1. Add this repo as a Claude Code plugin marketplace
+# 1. 將此儲存庫加入 Claude Code 的 plugin marketplace
 /plugin marketplace add microsoft/Webwright
 
-# 2. Install the plugin from that marketplace
+# 2. 從該 marketplace 安裝外掛
 /plugin install webwright@webwright
 ```
 
-Prefer a local checkout? Point the marketplace command at the cloned repo instead:
+偏好使用本機 checkout？也可以把 marketplace 指令指向已 clone 的儲存庫：
 
 ```text
 /plugin marketplace add /absolute/path/to/Webwright
 /plugin install webwright@webwright
 ```
 
-### Use
+### 使用
 
-**Start a new Claude Code session** after installing — plugins are loaded at session start and won't appear until you restart.
+安裝後請**啟動新的 Claude Code 工作階段**——外掛會在工作階段啟動時載入，重新啟動前不會出現。
 
-You can either ask Claude Code in plain English (the skill auto-activates from its description), or use one of the slash commands:
+你可以直接用自然語言要求 Claude Code 執行（技能會依描述自動啟用），也可以使用其中一個 slash command：
 
 ```
 /webwright:run search Google Flights for flights from SEA to JFK on 2026-08-15 to 2026-08-20
 /webwright:craft search a ticket on Google Flights from LAX to SFO depart June 7 return June 14
 ```
 
-- `/webwright:run` (or any plain prompt) produces a **one-shot** `final_script.py` for the literal task values.
-- `/webwright:craft` produces a **reusable CLI tool**: `final_script.py` becomes one parameterized function with a Google-style `Args:` docstring and an `argparse` wrapper whose flags default to the concrete task values, so you can rerun it later with different arguments — e.g. `python final_script.py --origin JFK --destination LAX --depart-date 2026-07-01`.
+- `/webwright:run`（或任何自然語言提示）會為當前任務的具體值產生 **one-shot** `final_script.py`。
+- `/webwright:craft` 會產生 **可重用的 CLI 工具**：`final_script.py` 會變成一個參數化函式，附帶 Google 風格的 `Args:` docstring 與 `argparse` 包裝器，旗標預設值就是這次任務的具體內容，因此你之後可以用不同參數重新執行——例如 `python final_script.py --origin JFK --destination LAX --depart-date 2026-07-01`。
 
-In both modes Claude Code scaffolds a workspace with `plan.md`, runs instrumented Playwright scripts under `final_runs/run_<id>/`, and visually self-verifies each critical point against the saved screenshots.
+在這兩種模式下，Claude Code 都會建立含有 `plan.md` 的工作區，在 `final_runs/run_<id>/` 下執行加上 instrumentation 的 Playwright 腳本，並根據已儲存的截圖，對每個關鍵節點進行視覺化自我驗證。
 
 </details>
 
 <details>
 <summary><b>OpenAI Codex</b></summary>
 
-### Install
+### 安裝
 
-Codex reads Claude-style marketplaces, so the same repo works as a Codex plugin marketplace. From the Codex CLI:
+Codex 可讀取 Claude 風格的 marketplace，因此同一個儲存庫也可作為 Codex 的 plugin marketplace。在 Codex CLI 中：
 
 ```bash
-# 1. Add this repo as a Codex plugin marketplace
+# 1. 將此儲存庫加入 Codex 的 plugin marketplace
 codex plugin marketplace add microsoft/Webwright
 
-# 2. Open the plugin browser and install Webwright
+# 2. 開啟外掛瀏覽器並安裝 Webwright
 codex
 /plugins
 ```
 
-Prefer a local checkout?
+偏好使用本機 checkout？
 
 ```bash
 codex plugin marketplace add /absolute/path/to/Webwright
 ```
 
-Then restart Codex so the new marketplace and plugin are picked up.
+之後重新啟動 Codex，讓新的 marketplace 與外掛被載入。
 
-### Use
+### 使用
 
-In a new Codex thread, either ask in plain English (the skill auto-activates from its description) or invoke the bundled skill explicitly with `@webwright`:
+在新的 Codex 對話中，你可以直接用自然語言要求（技能會依描述自動啟用），或以 `@webwright` 明確呼叫內附技能：
 
 ```
 @webwright search Google Flights for flights from SEA to JFK on 2026-08-15 to 2026-08-20
 ```
 
-Codex scaffolds a workspace with `plan.md`, runs instrumented Playwright scripts under `final_runs/run_<id>/`, and visually self-verifies each critical point against the saved screenshots.
+Codex 會建立含有 `plan.md` 的工作區，在 `final_runs/run_<id>/` 下執行加上 instrumentation 的 Playwright 腳本，並根據已儲存的截圖，對每個關鍵節點進行視覺化自我驗證。
 
-To turn the plugin off without uninstalling, set its entry in `~/.codex/config.toml` to `enabled = false` and restart Codex.
+若想在不解除安裝的情況下停用外掛，請將 `~/.codex/config.toml` 中對應條目設為 `enabled = false`，再重新啟動 Codex。
 
 </details>
 
 <details>
 <summary><b>🦞 OpenClaw</b></summary>
 
-### Install
+### 安裝
 
-Install directly from a local checkout (path, archive, npm spec, git repo, or `clawhub:` spec all work):
+可直接從本機 checkout 安裝（路徑、封存檔、npm 規格、git repo 或 `clawhub:` 規格都可）：
 
 ```bash
 openclaw plugins install /absolute/path/to/Webwright
-openclaw gateway restart   # reload so the plugin and skill are picked up
+openclaw gateway restart   # 重新載入，讓外掛與技能生效
 ```
 
-Verify:
+驗證：
 
 ```bash
 openclaw plugins list | grep webwright
-openclaw skills  list | grep webwright   # should show "✓ ready"
+openclaw skills  list | grep webwright   # 應顯示 "✓ ready"
 ```
 
-### Use
+### 使用
 
-The `webwright` skill is now available to any OpenClaw agent surface (CLI, Telegram, etc.) — invoke it by asking the agent in natural language, or via the slash commands shipped under [`skills/webwright/commands/`](skills/webwright/commands/), e.g. `/webwright run <task>`.
+`webwright` 技能現在可供任何 OpenClaw 代理介面（CLI、Telegram 等）使用——你可以用自然語言請代理執行，或使用位於 [`skills/webwright/commands/`](skills/webwright/commands/) 的 slash commands，例如 `/webwright run <task>`。
 
-To uninstall: `openclaw plugins uninstall webwright`.
+若要解除安裝：`openclaw plugins uninstall webwright`。
 
 </details>
 
 <details>
 <summary><b>Hermes Agent</b></summary>
 
-### Install
+### 安裝
 
-[Hermes Agent](https://github.com/NousResearch/hermes-agent) is a [skills-compatible client](https://agentskills.io), so the same `skills/webwright/` folder loads as a Hermes skill. Symlink it into your Hermes user-skills directory:
+[Hermes Agent](https://github.com/NousResearch/hermes-agent) 是相容於 [skills](https://agentskills.io) 的用戶端，因此同一個 `skills/webwright/` 資料夾也能作為 Hermes 技能載入。請將它建立符號連結到你的 Hermes user-skills 目錄：
 
 ```bash
 mkdir -p ~/.hermes/skills
 ln -sfn /absolute/path/to/Webwright/skills/webwright ~/.hermes/skills/webwright
 ```
 
-No Hermes-specific manifest is needed; only `SKILL.md` is loaded.
+不需要 Hermes 專用的 manifest；只會載入 `SKILL.md`。
 
-### Use
+### 使用
 
-Start Hermes (`hermes`) and ask it to drive a web task in natural language — the skill auto-activates from its description. You can also invoke it explicitly with `/webwright`.
+啟動 Hermes（`hermes`）後，以自然語言要求它處理網頁任務——技能會依描述自動啟用。你也可以用 `/webwright` 明確呼叫它。
 
-Note: the named subcommands shipped under [`skills/webwright/commands/`](skills/webwright/commands/) (`/webwright:run`, `/webwright:craft`) are a Claude Code / Codex convention and are inert in Hermes; the skill itself still works end-to-end.
+注意：位於 [`skills/webwright/commands/`](skills/webwright/commands/) 的具名子命令（`/webwright:run`、`/webwright:craft`）是 Claude Code / Codex 的慣例，在 Hermes 中不會生效；但技能本身仍可端到端運作。
 
 </details>
 
-## 📃 Trajectory Comparison & Viewer
+## 📃 Trajectory 比較與檢視器
 
-You can run the same tasks using the Webwright harness and its Codex / GitHub Copilot skill variant, and see how token usage and trajectories stack up between different harnesses. The trajectory viewer supports Codex, GitHub Copilot and Webwright harness traces.
+你可以使用 Webwright harness 與它的 Codex / GitHub Copilot skill 版本來執行同樣的任務，並比較不同 harness 之間的 token 使用量與 trajectories。trajectory viewer 支援 Codex、GitHub Copilot 與 Webwright harness traces。
 
 ![Trajectory comparison](assets/trajectory-compare.png)
 
-### How to use
+### 使用方式
 
 ```bash
 cd assets/compare_trajectory/
 python3 -m http.server
 ```
 
-Open the webpage in your browser and upload the Webwright `raw_responses.jsonl` and attach `trajectory.json` to view. Then on the other side you can upload your Codex or GitHub Copilot trace.
+在瀏覽器中開啟網頁，上傳 Webwright 的 `raw_responses.jsonl` 並附上 `trajectory.json` 以檢視內容。接著在另一側上傳你的 Codex 或 GitHub Copilot trace。
 
-### Obtaining Codex traces:
+### 取得 Codex traces：
 
 ```
 ls ~/.codex/sessions/2026/MONTH/DAY/SESSION_ID.jsonl
 ```
 
-### Obtaining GitHub Copilot traces:
+### 取得 GitHub Copilot traces：
 
 ```
 /export file session
 -> session.md is the uploadable trace
 ```
 
-### Quick Comparison
+### 快速比較
 
-#### "Find the cheapest used 8-cylinder bmw made between 2005-2015 and priced from 25,000 to  50,000 dollars with mileage less than 50,000 miles or less."
+#### 「找出 2005-2015 年之間出廠、售價 25,000 到 50,000 美元、里程低於 50,000 英里的最便宜二手 8 缸 BMW。」
 
-| Tokens | Webwright Harness (Local Browser Mode) | Codex Webwright Skill |
+| Tokens | Webwright Harness（本機瀏覽器模式） | Codex Webwright Skill |
 | --- | ---: | ---: |
 | Input | 420,433 | 3,271,143 |
 | Output | 3,593 | 20,040 |
@@ -386,18 +372,18 @@ ls ~/.codex/sessions/2026/MONTH/DAY/SESSION_ID.jsonl
 | Cached | 217,216 | 3,081,3440 |
 | Total | 424,026 | 3,291,183 |
 
-Individual runs and results may vary.
+個別執行與結果可能有所差異。
 
 ---
 
-## Credits
+## 致謝
 
-- [SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent/tree/main) — design inspiration for the minimal agent loop.
-- [Playwright](https://playwright.dev/) — browser automation.
+- [SWE-agent/mini-swe-agent](https://github.com/SWE-agent/mini-swe-agent/tree/main) —— 極簡代理迴圈的設計靈感。
+- [Playwright](https://playwright.dev/) —— 瀏覽器自動化。
 
-## Citation
+## 引用
 
-If you use Webwright in your research or build on it, please cite this repository:
+如果你在研究中使用 Webwright，或以此為基礎進行開發，請引用此儲存庫：
 
 ```bibtex
 @misc{webwright2026,

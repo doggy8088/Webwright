@@ -1,35 +1,25 @@
-# CLI Tool Mode
+# CLI 工具模式
 
-Default Webwright runs (`/webwright:run`, plain prompt) produce a one-shot
-`final_script.py` that solves the task for the literal values the user
-provided. **CLI tool mode** (`/webwright:craft`) instead produces a
-**reusable, parameterized CLI tool**: the same script can be re-run later
-with different argument values to perform the same kind of task.
+預設的 Webwright 執行（`/webwright:run`，一般提示詞）會產生一個單次執行的 `final_script.py`，解決使用者提供之具體數值的任務。而 **CLI 工具模式**（`/webwright:craft`）則會產生一個**可重複使用、參數化的 CLI 工具**：同一個腳本可以在稍後使用不同的參數值重新執行，以執行同類型的任務。
 
-This mode is adapted from `webwright/src/webwright/config/crafted_cli.yaml`'s
-"Final-Script Shape (CLI Tool, MANDATORY)" contract. The OpenAI-backed
-`self_reflection` gate is replaced by your own self-verification against
-`plan.md`.
+此模式改編自 `webwright/src/webwright/config/crafted_cli.yaml` 中的「Final-Script Shape (CLI Tool, MANDATORY)」契約。原本基於 OpenAI 的 `self_reflection` 關卡會被你對照 `plan.md` 的自我驗證所取代。
 
-## When to use
+## 何時使用
 
-Trigger CLI tool mode when:
+在下列情況下觸發 CLI 工具模式：
 
-- the user invokes `/webwright:craft …`, or
-- the user says "make it reusable", "parameterize", "turn this into a CLI",
-  "I want to call this again with different X", or similar.
+- 使用者呼叫了 `/webwright:craft …`，或者
+- 使用者表示「使其可重複使用」、「參數化」、「做成 CLI」、「我想要用不同的 X 再次呼叫此工具」或類似的說法。
 
-Otherwise, stay in default one-shot mode.
+否則，請保持在預設的單次執行模式。
 
-## `plan.md` — add a `# Parameters` section
+## `plan.md` — 新增 `# Parameters` 區塊
 
-Before writing the script, identify every requirement the user could
-plausibly vary and list them in `plan.md` **in addition to** the usual
-`# Critical Points` checklist:
+在撰寫腳本之前，除了常見的 `# Critical Points` 檢查清單之外，請識別使用者可能會合理變更的每項需求，並將它們列在 `plan.md` 中：
 
 ```markdown
 # Task
-<verbatim task description>
+<原封不動的任務描述>
 
 # Parameters
 | name    | type | source phrase from task | default     | allowed / format        |
@@ -43,39 +33,35 @@ plausibly vary and list them in `plan.md` **in addition to** the usual
 - [ ] CP2: ...
 ```
 
-Rules:
+規則：
 
-- Every entry in `# Parameters` must (a) become a function argument and
-  (b) become an `argparse --flag` with the listed default.
-- Items that are truly fixed for the site (start URL, site name, selector
-  strategy) are NOT parameters — keep them hard-coded.
-- Defaults reproduce the original task exactly. Running
-  `python final_script.py` with no arguments must reproduce the task.
-- Critical Points are still required; they are the verification contract.
+- `# Parameters` 中的每一個項目都必須 (a) 成為函式的參數，並且 (b) 成為 `argparse --flag`，且帶有列出的預設值。
+- 對於網站而言真正固定的項目（起始 URL、網站名稱、定位器策略）則**不是**參數——請保持寫死。
+- 預設值必須能完全重現原始任務。在無參數的情況下執行 `python final_script.py` 必須能重現該任務。
+- 關鍵點（Critical Points）仍是必須的；它們是驗證的契約。
 
-## `final_script.py` — required shape
+## `final_script.py` — 必要的結構形狀
 
-1. **One reusable function** named after the task domain. Examples:
+1. **一個以任務領域命名的可重複使用函式**。例如：
    - `def search_<domain>(arg_a, arg_b, ...): ...`
    - `def lookup_<entity>(query, filters): ...`
 
-2. **Google-style docstring** with summary, full `Args:` block, and
-   `Returns:`. Each `Args:` entry documents:
-   - the argument name and type,
-   - what it represents in the task domain,
-   - accepted format / units / allowed values,
-   - the default (mirroring the `# Parameters` table).
+2. **Google 風格的文件字串**，包含摘要、完整的 `Args:` 區塊和 `Returns:`。每個 `Args:` 欄位文件需記錄：
+   - 參數名稱與型態、
+   - 它在任務領域中代表什麼、
+   - 接受的格式／單位／允許的值、
+   - 預設值（對照 `# Parameters` 表格）。
 
    ```python
    def search_<domain>(arg_a: str, arg_b: int, arg_c: str) -> dict:
-       """<One-line summary of what this tool does on the target site>.
+       """<此工具在目標網站上執行之操作的一行摘要>.
 
        Args:
-           arg_a: <what it represents>; <format / allowed values>.
+           arg_a: <代表什麼>; <格式 / 允許的值>.
                Default: "<value>".
-           arg_b: <what it represents>; <range / units>.
+           arg_b: <代表什麼>; <範圍 / 單位>.
                Default: <value>.
-           arg_c: <what it represents>; <format>.
+           arg_c: <代表什麼>; <格式>.
                Default: "<value>".
 
        Returns:
@@ -83,9 +69,7 @@ Rules:
        """
    ```
 
-3. **`argparse` CLI** under `if __name__ == "__main__":`. Every function
-   argument has a matching `--<arg>` flag with `type=`, `help=` (copied
-   from the docstring), and `default=` equal to the concrete task value:
+3. **`argparse` CLI** 實作於 `if __name__ == "__main__":` 下。每個函式參數都有對應的 `--<arg>` flag，並包含 `type=`、`help=`（複製自文件字串）和 `default=`（等於具體的任務數值）：
 
    ```python
    if __name__ == "__main__":
@@ -94,53 +78,43 @@ Rules:
            description=search_<domain>.__doc__.splitlines()[0])
        parser.add_argument("--arg-a", dest="arg_a", type=str,
                            default="<value>",
-                           help="<copied from docstring>")
+                           help="<複製自文件字串>")
        parser.add_argument("--arg-b", dest="arg_b", type=int,
                            default=<value>,
-                           help="<copied from docstring>")
+                           help="<複製自文件字串>")
        parser.add_argument("--arg-c", dest="arg_c", type=str,
                            default="<value>",
-                           help="<copied from docstring>")
+                           help="<複製自文件字串>")
        args = parser.parse_args()
        result = asyncio.run(_run(**vars(args)))
        print(result)
    ```
 
-4. **Side-effect-free at import time.** No browser launch, no network
-   call, no file write at module top-level. The reusable function must be
-   importable from another Python process without triggering a run.
+4. **匯入時不得產生副作用 (Side-effect-free)**。在模組頂層不得啟動瀏覽器、不得進行網路呼叫、亦不得寫入檔案。該可重複使用的函式必須能夠從另一個 Python 行程匯入，而不會觸發執行。
 
-5. **Action-log parameter echo.** The first line written to
-   `final_script_log.txt` after reset MUST be a `step 0 params: ...`
-   line listing every resolved argument as `name=value` pairs, e.g.:
+5. **行動日誌參數回顯。** 在重設後寫入 `final_script_log.txt` 的第一行**必須**是 `step 0 params: ...` 行，將每個解析後的參數列為 `name=value` 對，例如：
 
    ```
    step 0 params: arg_a=<value> arg_b=<value> arg_c=<value>
    ```
 
-   so the resolved inputs are visible in any verification pass.
+   這樣在任何驗證步驟中，解析後的輸入都是可見的。
 
-6. Same instrumentation as default mode: viewport 1280×1800, headless
-   local Firefox, no `full_page=True`, screenshots saved as
-   `final_runs/run_<id>/screenshots/final_execution_<step>_<action>.png`,
-   final datum appended to `final_script_log.txt`.
+6. 使用與預設模式相同的插樁：檢視區 1280×1800、無頭本地 Firefox、無 `full_page=True`、螢幕截圖儲存為 `final_runs/run_<id>/screenshots/final_execution_<step>_<action>.png`、最終數據附加至 `final_script_log.txt`。
 
-## Verification (replaces `self_reflection`)
+## 驗證 (取代 `self_reflection`)
 
-In addition to the default self-verification (every CP in `plan.md`
-ticked with cited screenshot/log evidence), CLI mode requires:
+除了預設的自我驗證（`plan.md` 中的每個 CP 都已勾選並附上螢幕截圖／日誌證據）之外，CLI 模式還要求：
 
-1. **Reproduce the task with no arguments.** Inside a fresh
-   `final_runs/run_<id>/`:
+1. **在無參數下重現任務。** 在全新的 `final_runs/run_<id>/` 目錄下執行：
 
    ```bash
    cd final_runs/run_<id> && python final_script.py
    ```
 
-   The run must succeed end-to-end and produce the expected screenshots
-   and `step 0 params: ...` log line.
+   該執行必須端到端成功，並產生預期的螢幕截圖與 `step 0 params: ...` 日誌行。
 
-2. **Import-safety smoke test.** From any other directory:
+2. **匯入安全性冒煙測試。** 從任何其他目錄執行：
 
    ```bash
    python -c "import importlib.util, pathlib; \
@@ -149,39 +123,26 @@ ticked with cited screenshot/log evidence), CLI mode requires:
      print([n for n in dir(m) if not n.startswith('_')])"
    ```
 
-   This must complete instantly with no browser launch and print the
-   reusable function's name.
+   這必須在瞬間完成，且不會啟動瀏覽器，並列印出該可重複使用函式的名稱。
 
-3. **Optional second run with a different argument value.** Demonstrates
-   parameterization actually works. Run inside `final_runs/run_<id>_alt/`
-   (or just save its log/screenshot folder there). Skip only if the
-   alternate value would clearly fail (e.g. an unsupported value on the
-   target site).
+3. **選用：使用不同參數值進行第二次執行。** 證明參數化確實有效。在 `final_runs/run_<id>_alt/` 內執行（或者直接將其日誌／螢幕截圖資料夾儲存於該處）。僅在替代值顯然會失敗時才略過（例如：目標網站不支援的數值）。
 
-4. **Print `--help`.** End by showing the user:
+4. **列印 `--help`。** 最後向使用者展示：
 
    ```bash
    python final_runs/run_<id>/final_script.py --help
    ```
 
-## Completion gate (CLI mode)
+## 完成關卡 (CLI 模式)
 
-Set the task complete only when **all** are true:
+僅在滿足以下**所有**條件時，才判定任務完成：
 
-1. `plan.md` contains both `# Parameters` (with name, type, source phrase,
-   default, allowed/format) and `# Critical Points` checklists.
-2. `final_script.py` defines exactly one reusable function with a
-   Google-style `Args:` docstring covering every parameter.
-3. Every `# Parameters` entry maps 1-to-1 to a function argument **and**
-   an argparse `--flag` whose default equals the concrete task value.
-4. The script is import-safe (smoke test passes).
-5. `python final_script.py` (no args) inside `final_runs/run_<id>/`
-   reproduced the task; all CPs verified against saved screenshots and
-   the action log.
-6. `step 0 params: ...` line is present in `final_script_log.txt`.
-7. The user has seen the final datum **and** the `--help` output so they
-   know how to call the tool again with different arguments.
+1. `plan.md` 同時包含 `# Parameters` 表格（包含名稱、型態、來源字句、預設值、允許值／格式）和 `# Critical Points` 檢查清單。
+2. `final_script.py` 定義了剛好一個可重複使用函式，並帶有涵蓋每個參數的 Google 風格 `Args:` 文件字串。
+3. 每個 `# Parameters` 項目與函式參數及 argparse `--flag` 呈 1 對 1 對應，且預設值等於具體任務的數值。
+4. 腳本具備匯入安全性（冒煙測試通過）。
+5. 在 `final_runs/run_<id>/` 內執行 `python final_script.py`（不帶參數）能重現任務；所有 CP 對照儲存的螢幕截圖與行動日誌均已驗證。
+6. `final_script_log.txt` 中存在 `step 0 params: ...` 行。
+7. 使用者已看到最終數據**以及** `--help` 輸出，從而得知如何以不同的參數再次呼叫此工具。
 
-If any of those is false, do not declare done — diagnose, fix the script
-(preserving the CLI shape), re-run inside the next `run_<id+1>/`, and
-re-verify.
+若有任何一項不符合，請勿宣告完成——請診斷、修正腳本（保留 CLI 形狀），在下一個 `run_<id+1>/` 中重新執行並重新驗證。

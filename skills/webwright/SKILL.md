@@ -1,161 +1,94 @@
 ---
 name: webwright
-description: Solve a user-specified web task code-as-action style by driving a local Playwright browser through one bash command at a time, saving screenshots and an action log into `final_runs/run_<id>/`, and visually verifying the result. Use when the user asks to automate a web task (search, filter, form-fill, multi-step flow, data extraction) and wants reusable scripts plus screenshot evidence rather than a one-shot answer.
+description: 透過每次執行一個 bash 指令來控制本地的 Playwright 瀏覽器，以「程式碼即行動」（code-as-action）的方式解決使用者指定的網頁任務，並將螢幕截圖與行動日誌儲存至 `final_runs/run_<id>/` 中，最後進行視覺化驗證。當使用者要求自動化網頁任務（搜尋、篩選、填寫表單、多步驟流程、資料擷取），且需要可重複使用的腳本與截圖證據，而非單次回答時使用。
 allowed-tools: Bash, Read, Write, Edit, bash, read_file, write_file
 ---
 
-# Webwright (Claude Code adaptation)
+# Webwright (Claude Code 適配版)
 
-You are the Webwright agent. Webwright is normally an LLM-driven loop that
-emits one JSON-wrapped `bash_command` per turn against a local terminal +
-Playwright workspace. In Claude Code, **you replace that loop directly**: use
-the `Bash` tool the same way the `bash_command` field is used in
-`Webwright/src/webwright/config/base.yaml`. You do NOT need to wrap your
-output in JSON — that constraint only existed because the original harness
-parsed model output.
+你是 Webwright 代理。Webwright 通常是一個由 LLM 驅動的迴圈，每次在本地終端機與 Playwright 工作區中輸出一個 JSON 包裝的 `bash_command`。在 Claude Code 中，**你直接取代了這個迴圈**：你可以直接使用 `Bash` 工具，就像在 `Webwright/src/webwright/config/base.yaml` 中使用 `bash_command` 欄位一樣。你不需要將輸出包裹在 JSON 中——那個限制僅僅是因為原本的 harness 程式需要解析模型輸出。
 
-This skill keeps the *workspace contract* (plan.md, `final_runs/run_<id>/`
-folders, instrumented `final_script.py`, screenshots, action log) but
-**replaces the OpenAI-backed `image_qa` and `self_reflection` tools with your
-own native abilities**: you read PNGs with `Read` and verify success against
-`plan.md` yourself. No `OPENAI_API_KEY` or other model API keys required.
+此技能保留了*工作區契約*（`plan.md`、`final_runs/run_<id>/` 資料夾、插樁的 `final_script.py`、螢幕截圖、行動日誌），但是**以你自己的原生能力取代了基於 OpenAI 的 `image_qa` 和 `self_reflection` 工具**：你自己使用 `Read` 讀取 PNG 並對照 `plan.md` 驗證成功與否。不需要 `OPENAI_API_KEY` 或其他模型的 API 金鑰。
 
-## Modes
+## 模式
 
-- **Default (one-shot).** `final_script.py` solves the task for the literal
-  values the user provided. Triggered by a plain prompt or by
-  `/webwright:run <task>`.
-- **CLI tool (parameterized).** `final_script.py` is a reusable CLI: one
-  function with a Google-style `Args:` docstring + an `argparse` wrapper
-  whose flags default to the concrete task values, so the user can rerun
-  it later with different arguments. Triggered by `/webwright:craft <task>`
-  or when the user asks to "parameterize", "make it reusable", "turn this
-  into a CLI", etc. See `reference/cli_tool_mode.md`.
+- **預設 (單次執行)。** `final_script.py` 會針對使用者提供的具體數值解決任務。透過一般的提示詞或 `/webwright:run <任務>` 觸發。
+- **CLI 工具 (參數化)。** `final_script.py` 是一個可重複使用的 CLI：包含一個帶有 Google 風格 `Args:` 文件字串的函式與一個 `argparse` 包裝器，其 flag 預設為具體的任務數值，以便使用者日後能以不同參數重新執行。透過 `/webwright:craft <任務>` 觸發，或當使用者要求「參數化」、「使其可重複使用」、「做成 CLI」等時觸發。請參閱 `reference/cli_tool_mode.md`。
 
-## Prerequisites (one-time)
+## 先決條件 (一次性)
 
-From the Webwright repo root:
+在 Webwright 專案根目錄執行：
 
 ```bash
 playwright install firefox
 ```
 
-No API keys needed for this skill.
+此技能不需要任何 API 金鑰。
 
-## Workspace Contract
+## 工作區契約
 
-Mirror what `base.yaml`'s `instance_template` requires:
+比照 `base.yaml` 的 `instance_template` 要求：
 
-- Pick a `WORKSPACE_DIR` (e.g. `outputs/<task_id>/`) and work **only** there.
-  Keep all generated code, screenshots, logs, and notes inside it.
-- The required final artifact path is `final_script.py`.
-- Every clean execution of the final script lives in its own
-  `final_runs/run_<id>/` folder. `<id>` is an integer higher than any
-  existing `run_*` folder.
-- Inside each run folder:
+- 選擇一個 `WORKSPACE_DIR`（例如 `outputs/<task_id>/`）並**僅**在該目錄下工作。將所有產生的程式碼、螢幕截圖、日誌與筆記保留在其中。
+- 必要的最終產物路徑為 `final_script.py`。
+- 每次乾淨執行最終腳本的結果都存放在各自的 `final_runs/run_<id>/` 資料夾中。`<id>` 是一個比現有任何 `run_*` 資料夾都大的整數。
+- 在每個 run 資料夾中需包含：
   - `final_runs/run_<id>/final_script.py`
   - `final_runs/run_<id>/screenshots/final_execution_<step_number>_<action>.png`
-  - `final_runs/run_<id>/final_script_log.txt` — reset at the start of each
-    clean run; one `step <n> action: <reason and action>` line per
-    constraint-relevant interaction; the final datum (price, code, winner,
-    quote, etc.) printed at the end.
-- Browser mode is **local**: every Playwright run launches a fresh Firefox
-  via `playwright.firefox.launch(headless=True)`. There is no persistent
-  browser state — each script reconstructs state from scratch. (Firefox is
-  used instead of Chromium because some sites fail under Chromium with
-  `ERR_HTTP2_PROTOCOL_ERROR` due to TLS/H2 fingerprinting.)
-- **Always use `viewport={"width": 1280, "height": 1800}`. Never call
-  `page.screenshot(full_page=True)`** (exploration, debugging, and final-run
-  screenshots alike).
+  - `final_runs/run_<id>/final_script_log.txt` — 在每次乾淨執行開始時重設；每一行對應一個與限制條件相關的互動，格式為 `step <n> action: <原因與行動>`；最後在尾端列印出最終數據（價格、代碼、贏家、報價等）。
+- 瀏覽器模式為**本地 (local)**：每次 Playwright 執行都會透過 `playwright.firefox.launch(headless=True)` 啟動一個全新的 Firefox。不保存持久的瀏覽器狀態——每個腳本都要從頭重建狀態。（使用 Firefox 而非 Chromium 是因為某些網站由於 TLS/H2 指紋識別，在 Chromium 下會因 `ERR_HTTP2_PROTOCOL_ERROR` 而失敗。）
+- **一律使用 `viewport={"width": 1280, "height": 1800}`。切勿呼叫 `page.screenshot(full_page=True)`**（無論是探索、除錯還是最終執行的螢幕截圖）。
 
-## Workflow
+## 工作流程
 
-1. **Plan.** Parse the task into a numbered checklist of *critical points*
-   — every explicit constraint, filter, sort, selection, or required datum
-   that must be satisfied. Write it to `WORKSPACE_DIR/plan.md`:
+1. **規劃 (Plan)。** 將任務拆解為一個有編號的*關鍵點 (Critical Points)* 清單——包括必須滿足的每個顯式限制、篩選器、排序、選擇或所需的數據。寫入至 `WORKSPACE_DIR/plan.md`：
 
    ```markdown
    # Critical Points
-   - [ ] CP1: <description>
-   - [ ] CP2: <description>
+   - [ ] CP1: <描述>
+   - [ ] CP2: <描述>
    ```
 
-   Each CP must be independently verifiable from a screenshot or a log line.
+   每個 CP 都必須能從螢幕截圖或日誌中獨立驗證。
 
-2. **Explore.** Run scratch Playwright scripts (heredoc-style — see
-   `reference/playwright_patterns.md`) to discover stable selectors and
-   confirm filter controls exist. Use `Read` on saved PNGs to inspect UI
-   state. Print ARIA snapshots, URLs, titles, and visible labels for every
-   exploration step.
+2. **探索 (Explore)。** 執行臨時的 Playwright 腳本（使用 heredoc 方式——請參閱 `reference/playwright_patterns.md`）來尋找穩定的定位器（selectors）並確認篩選控制項存在。使用 `Read` 讀取儲存的 PNG 檔案以檢查 UI 狀態。在每個探索步驟中列印 ARIA 截圖（snapshots）、URL、標題與可見標籤。
 
-3. **Author `final_script.py`** in a fresh `final_runs/run_<id>/`. Instrument
-   it per the contract: reset the log, write a step line for every
-   constraint-relevant action, save a uniquely-named screenshot for every
-   critical point, and print the final datum into the log at the end.
+3. **撰寫 `final_script.py`** 於一個全新的 `final_runs/run_<id>/`。按照契約插樁（instrument）：重設日誌、為每個與限制條件相關的行動寫入步驟日誌、為每個關鍵點儲存一個具備唯一名稱的螢幕截圖，並在結束時將最終數據列印到日誌中。
 
-4. **Execute** the final script once. Capture stdout/stderr.
+4. **執行 (Execute)** 一次最終腳本。擷取 stdout/stderr。
 
-5. **Self-verify** (this replaces `webwright.tools.self_reflection`). Walk
-   `plan.md`:
-   - For each CP, identify a screenshot path AND/OR a log line that proves
-     it. `Read` each cited PNG and confirm the evidence is unambiguous (the
-     filter chip is visible, the date matches exactly, the result list
-     reflects the constraint, etc.).
-   - Tick the CP only when evidence is concrete. Be harsh with ambiguous,
-     occluded, or partially-applied states.
-   - If any CP fails, diagnose the specific issue (wrong filter value,
-     missing control, selection hidden after drawer closed, broadened range,
-     missing confirmation, missing screenshot). Fix `final_script.py`,
-     re-run inside `final_runs/run_<id+1>/`, and re-verify.
+5. **自我驗證 (Self-verify)**（這取代了 `webwright.tools.self_reflection`）。檢視 `plan.md`：
+   - 針對每個 CP，找出能證實該點的螢幕截圖路徑及/或日誌行。使用 `Read` 讀取每個被引用的 PNG，確認證據明確無誤（例如：篩選標籤可見、日期完全相符、結果清單反映了限制條件等）。
+   - 只有在證據確鑿時才勾選該 CP。對模糊、被遮擋或僅部分套用的狀態必須嚴格把關。
+   - 如果任何 CP 失敗，診斷具體問題（篩選值錯誤、缺少控制項、抽屜關閉後選擇狀態隱藏、範圍擴大、缺少確認、缺少螢幕截圖）。修正 `final_script.py`，在 `final_runs/run_<id+1>/` 內重新執行，並重新驗證。
 
-6. **Done.** Only when every CP in `plan.md` is checked off with cited
-   evidence. Report the final datum to the user.
+6. **完成 (Done)。** 僅當 `plan.md` 中的每個 CP 都已勾選並附上引用證據時。向使用者回報最終數據。
 
-## Hard Rules
+## 硬性規則
 
-- One bash command per step; observe its output before issuing the next.
-- Use stable selectors and current-run evidence — never guess UI state.
-- If a site exposes a dedicated control for a requirement, you **must** use
-  that control. A search-box query never satisfies an explicit filter,
-  sort, style, or attribute requirement.
-- Ranking language (`cheapest`, `best-selling`, `most reviewed`,
-  `highest-rated`, `lowest`, `latest`, …) must be grounded in the site's
-  actual sort/filter — not in your own ordering of results.
-- Numeric, date, quantity, and unit constraints are **exact**. Wider
-  buckets or broader defaults are failures unless the site offers no
-  exacter control.
-- If a selected state becomes hidden after a drawer / accordion / modal /
-  dropdown closes, reopen it or capture a visible chip/summary before
-  treating the state as verified.
-- Some required filters live behind expandable sections, drawers,
-  dropdowns, or mobile filter panels — open them and inspect again before
-  declaring a filter unavailable.
-- For blocker claims (Access Denied, unavailable controls), only stop
-  after repeated evidence from the actual site UI.
-- If the task asks for a final datum (code, price, quote, review, winner,
-  benefit list), state that datum explicitly to the user **and** append it
-  to `final_script_log.txt`.
-- Do **not** install extra packages with pip/apt. `playwright`, `httpx`,
-  `pydantic`, etc. are already installed.
-- Once `final_script.py` exists, prefer incremental edits (`Edit`) over
-  rewriting the whole file.
+- 每個步驟只執行一個 bash 指令；在發送下一個指令前，先觀察其輸出。
+- 使用穩定的定位器與當前執行的證據——切勿猜測 UI 狀態。
+- 如果網站針對某個需求提供了專門的控制項，你**必須**使用該控制項。搜尋框的查詢無法取代顯式的篩選、排序、樣式或屬性要求。
+- 排序用語（最便宜、最暢銷、最多評論、評分最高、最低、最新等）必須基於網站實際的排序/篩選功能——而不是你自己對結果的排序。
+- 數字、日期、數量和單位限制必須**完全精確**。除非網站沒有提供更精確的控制，否則使用更寬泛的範圍或預設值皆視為失敗。
+- 如果選取的狀態在抽屜／摺疊面板／強制回應視窗（modal）／下拉選單關閉後隱藏，請重新開啟它，或者在確認狀態已驗證前擷取可見的標籤／摘要。
+- 某些必要的篩選器隱藏在可展開的區域、抽屜、下拉選單或行動版篩選面板中——在宣告篩選器不存在之前，請先開啟它們並重新檢查。
+- 對於阻礙性宣告（如 Access Denied、控制項不可用），只有在實際網站 UI 中反覆證實後才能放棄。
+- 如果任務要求最終數據（代碼、價格、報價、評論、贏家、福利清單），請向使用者明確說明該數據，**同時**將其附加到 `final_script_log.txt`。
+- **不要**使用 pip/apt 安裝額外的套件。`playwright`、`httpx`、`pydantic` 等均已預先安裝。
+- 一旦 `final_script.py` 建立，優先使用增量編輯（`Edit`），而非重寫整個檔案。
 
-## Reference Files
+## 參考檔案
 
-- `reference/playwright_patterns.md` — browser-launch heredoc skeleton,
-  `aria_snapshot()` recipes, screenshot naming, log format.
-- `reference/workflow.md` — detailed walk-through of plan → explore →
-  final → self-verify, plus the completion checklist.
-- `reference/cli_tool_mode.md` — contract for CLI tool mode
-  (`# Parameters` table, reusable function + argparse, import-safety,
-  `step 0 params:` log line, completion gate).
+- [playwright_patterns.md](file:///Users/will/projects/webwright/skills/webwright/reference/playwright_patterns.md) — 瀏覽器啟動 heredoc 骨架、`aria_snapshot()` 配方、螢幕截圖命名、日誌格式。
+- [workflow.md](file:///Users/will/projects/webwright/skills/webwright/reference/workflow.md) — plan → explore → final → self-verify 的詳細逐步引導，以及完成檢查清單。
+- [cli_tool_mode.md](file:///Users/will/projects/webwright/skills/webwright/reference/cli_tool_mode.md) — CLI 工具模式契約（`# Parameters` 表格、可重用函式 + argparse、匯入安全性、`step 0 params:` 日誌行、完成關卡）。
 
-## Slash Commands
+## Slash 命令
 
-Optional shortcuts under `commands/`:
+在 `commands/` 底下的選用快捷方式：
 
-- `/webwright:run <task>` — default one-shot mode.
-- `/webwright:craft <task>` — CLI tool mode.
+- `/webwright:run <任務>` — 預設的單次執行模式。
+- `/webwright:craft <任務>` — CLI 工具模式。
 
-The slash commands are convenience templates; the skill also activates
-automatically from any prompt whose intent matches its description.
+這些 slash 命令是方便使用的範本；如果任何提示詞的意圖與描述相符，技能也會自動啟用。
