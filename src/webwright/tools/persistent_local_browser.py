@@ -125,7 +125,7 @@ def _cmd_create(args: argparse.Namespace) -> int:
     ]
     if args.headless:
         chromium_args.append("--headless=new")
-    if args.no_sandbox:
+    if not args.sandbox:
         chromium_args.append("--no-sandbox")
     chromium_args.extend(args.chromium_arg or [])
 
@@ -255,10 +255,10 @@ def _build_parser() -> argparse.ArgumentParser:
         help="Launch Chromium headless (default: True).",
     )
     create.add_argument(
-        "--no-sandbox",
+        "--sandbox",
         action=argparse.BooleanOptionalAction,
-        default=True,
-        help="Pass --no-sandbox (often required in containers/CI).",
+        default=False,
+        help="Enable Chromium sandbox (default: False, i.e., --no-sandbox is passed).",
     )
     create.add_argument("--window-width", type=int, default=1280)
     create.add_argument("--window-height", type=int, default=1800)

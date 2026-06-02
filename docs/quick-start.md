@@ -19,17 +19,17 @@ Webwright 採取了不同的思維方式：
 
 ## 2. 環境建置與安裝
 
-本專案需要 Python 3.10+。請在專案根目錄下依序執行以下步驟：
+本專案需要 Python 3.10+ 與 [uv](https://github.com/astral-sh/uv)。請在專案根目錄下依序執行以下步驟：
 
 ### 2.1 安裝專案依賴
 
-使用可編輯模式（editable mode）安裝套件：
+使用 `uv` 同步並建立虛擬環境：
 
 ```bash
-pip install -e .
+uv sync
 ```
 
-這會安裝核心依賴，如 `playwright`、`httpx`、`pydantic`、`typer` 等。
+這會自動建立 `.venv` 虛擬環境並安裝所有核心依賴（如 `playwright`、`httpx`、`pydantic`、`typer` 等）。
 
 ### 2.2 安裝 Playwright 瀏覽器
 
@@ -37,10 +37,10 @@ Webwright 預設使用 Chromium 與 Firefox 進行網頁操作：
 
 ```bash
 # 安裝 Chromium (用於標準 CLI harness)
-playwright install chromium
+uv run playwright install chromium
 
 # 安裝 Firefox (用於外掛/技能模式下避開 Akamai 等 TLS/H2 指紋辨識)
-playwright install firefox
+uv run playwright install firefox
 ```
 
 ---
@@ -59,10 +59,10 @@ export OPENAI_API_KEY="your-api-key-here"
 
 ### 3.2 執行預設任務
 
-Webwright 的進入點是 [cli.py](file:///Users/will/projects/webwright/src/webwright/run/cli.py)。我們可以使用以下指令啟動：
+Webwright 的進入點是 [cli.py](file:///Users/will/projects/webwright/src/webwright/run/cli.py)。我們可以使用 `uv run` 啟動：
 
 ```bash
-python -m webwright.run.cli \
+uv run python -m webwright.run.cli \
     -c base.yaml -c model_openai.yaml \
     -t "查詢從西雅圖(SEA)到紐約(JFK)，在 2026-08-15 出發、2026-08-20 回程的航班" \
     --start-url https://www.google.com/flights \
@@ -125,7 +125,7 @@ flight_search_demo/
 修改程式碼後，請務必執行單元測試以確保沒有破壞現有的整合契約：
 
 ```bash
-pytest
+uv run pytest
 ```
 
 主要的測試案例（如 `tests/unit/test_tool_model_routing.py`）會驗證輔助工具是否正確地與主 agent 共享相同的模型配置。
